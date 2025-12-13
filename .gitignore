@@ -1,5 +1,5 @@
 # Dependencies
-node_modules/
+/node_modules
 /.pnp
 .pnp.js
 
@@ -7,8 +7,8 @@ node_modules/
 /coverage
 
 # Production build
-dist/
-build/
+/dist
+/build
 
 # Environment variables
 .env
@@ -25,7 +25,8 @@ pnpm-debug.log*
 lerna-debug.log*
 
 # Editor directories and files
-.vscode/*
+/.vscode
+/.vscode/*
 !.vscode/extensions.json
 .idea
 .DS_Store
@@ -38,7 +39,7 @@ lerna-debug.log*
 # Temporary files
 *.tmp
 *.temp
-.cache/
+/.cache
 
 # Optional npm cache directory
 .npm
@@ -47,8 +48,8 @@ lerna-debug.log*
 .eslintcache
 
 # WordPress specific (if building into WP theme)
-wp-content/uploads/
-wp-content/cache/
+/wp-content/uploads/
+/wp-content/cache/
 *.sql
 *.sql.gz
 
