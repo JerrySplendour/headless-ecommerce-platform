@@ -1,6 +1,6 @@
 // export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost/toyfront/wp-json"
 // export const APP_BASE_URL = "http://localhost/toyfront/";
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://imesglobe.com/wp-json"
+export const API_BASE_URL =  "https://imesglobe.com/wp-json"
 export const APP_BASE_URL = "https://imesglobe.com/";
 // https://imesglobe.com
 export const API_ENDPOINTS = {

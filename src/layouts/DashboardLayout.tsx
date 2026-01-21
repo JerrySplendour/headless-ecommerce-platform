@@ -84,7 +84,8 @@ export default function DashboardLayout() {
     },
   ]
 
-  const accessibleNavItems = navItems.filter((item) => canAccessRoute(user, item.path))
+  const accessibleNavItems = navItems
+  // const accessibleNavItems = navItems.filter((item) => canAccessRoute(user, item.path))
 
   return (
     <div className="min-h-screen bg-gray-50 flex">

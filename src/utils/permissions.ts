@@ -53,8 +53,12 @@ const rolePermissions: Record<User["role"], Permission[]> = {
 }
 
 export const hasPermission = (user: User | null, permission: Permission): boolean => {
-  if (!user || !user.role) return false // early return if role is missing
-  return rolePermissions[user.role].includes(permission)
+  if (!user || !user.role) return false // user or role missing
+
+  const permissions = rolePermissions[user.role]
+  if (!permissions) return false // role not in rolePermissions
+
+  return permissions.includes(permission)
 }
 
 export const canAccessRoute = (user: User | null, route: string): boolean => {
