@@ -1,21 +1,23 @@
 "use client"
 
 import { useState } from "react"
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
+import { useNavigate, Link } from "react-router-dom"
 import { ordersAPI } from "../../api/orders"
 import type { Order } from "../../types"
 import { hasPermission } from "../../utils/permissions"
 import { useAuthStore } from "../../store/authStore"
 
 export default function Orders() {
+  const navigate = useNavigate()
   const [currentPage, setCurrentPage] = useState(1)
   const [statusFilter, setStatusFilter] = useState<string>("all")
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
+  const [paymentFilter, setPaymentFilter] = useState<string>("all")
   const queryClient = useQueryClient()
   const user = useAuthStore((state) => state.user)
 
   const { data: ordersData, isLoading } = useQuery({
-    queryKey: ["orders", currentPage, statusFilter],
+    queryKey: ["orders", currentPage, statusFilter, paymentFilter],
     queryFn: () =>
       ordersAPI.getAll({
         page: currentPage,
@@ -24,15 +26,7 @@ export default function Orders() {
       }),
   })
 
-  const updateStatusMutation = useMutation({
-    mutationFn: ({ id, status }: { id: number; status: Order["status"] }) => ordersAPI.updateStatus(id, status),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["orders"] })
-      setSelectedOrder(null)
-    },
-  })
-
-  const canEdit = hasPermission(user, "edit_orders")
+  const canCreate = hasPermission(user, "create_orders")
 
   const statusOptions: Order["status"][] = [
     "pending",
@@ -45,21 +39,16 @@ export default function Orders() {
   ]
 
   const getStatusColor = (status: Order["status"]) => {
-    const colors = {
+    const colors: Record<Order["status"], string> = {
       pending: "bg-yellow-100 text-yellow-700",
       processing: "bg-blue-100 text-blue-700",
       "on-hold": "bg-orange-100 text-orange-700",
       completed: "bg-green-100 text-green-700",
-      cancelled: "bg-gray-100 text-gray-700",
-      refunded: "bg-purple-100 text-purple-700",
+      cancelled: "bg-red-100 text-red-700",
+      refunded: "bg-gray-100 text-gray-700",
       failed: "bg-red-100 text-red-700",
     }
-    return colors[status] || "bg-gray-100 text-gray-700"
-  }
-
-  const getSalesChannel = (order: Order) => {
-    const channelMeta = order.meta_data?.find((meta) => meta.key === "sales_channel")
-    return channelMeta?.value || "website"
+    return colors[status] || colors.pending
   }
 
   return (
@@ -67,23 +56,80 @@ export default function Orders() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Orders</h1>
-          <p className="text-gray-600 mt-1">Manage all your orders from different channels</p>
+          <p className="text-gray-600 mt-1">Manage and track customer orders</p>
+        </div>
+        {canCreate && (
+          <button onClick={() => navigate("/dashboard/create-order")} className="btn btn-primary">
+            + Create Order
+          </button>
+        )}
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="card">
+          <div className="text-sm text-gray-600">Total Orders</div>
+          <div className="text-3xl font-bold text-gray-900 mt-2">{ordersData?.total || 0}</div>
+        </div>
+        <div className="card">
+          <div className="text-sm text-gray-600">Amount Owed</div>
+          <div className="text-3xl font-bold text-red-600 mt-2">₦0</div>
+        </div>
+        <div className="card">
+          <div className="text-sm text-gray-600">Completed Orders</div>
+          <div className="text-3xl font-bold text-green-600 mt-2">
+            {ordersData?.data?.filter((o) => o.status === "completed").length || 0}
+          </div>
+        </div>
+        <div className="card">
+          <div className="text-sm text-gray-600">Pending Orders</div>
+          <div className="text-3xl font-bold text-orange-600 mt-2">
+            {ordersData?.data?.filter((o) => o.status === "pending").length || 0}
+          </div>
         </div>
       </div>
 
       {/* Filters */}
       <div className="card">
         <div className="flex flex-wrap gap-4">
-          <select className="input max-w-xs" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-            <option value="all">All Statuses</option>
-            <option value="pending">Pending</option>
-            <option value="processing">Processing</option>
-            <option value="on-hold">On Hold</option>
-            <option value="completed">Completed</option>
-            <option value="cancelled">Cancelled</option>
-            <option value="refunded">Refunded</option>
-            <option value="failed">Failed</option>
+          <select
+            className="input max-w-xs"
+            value={statusFilter}
+            onChange={(e) => {
+              setStatusFilter(e.target.value)
+              setCurrentPage(1)
+            }}
+          >
+            <option value="all">All Order Status</option>
+            {statusOptions.map((status) => (
+              <option key={status} value={status}>
+                {status.charAt(0).toUpperCase() + status.slice(1)}
+              </option>
+            ))}
           </select>
+          <select
+            className="input max-w-xs"
+            value={paymentFilter}
+            onChange={(e) => {
+              setPaymentFilter(e.target.value)
+              setCurrentPage(1)
+            }}
+          >
+            <option value="all">All Payment Status</option>
+            <option value="paid">Paid</option>
+            <option value="unpaid">Unpaid</option>
+            <option value="partial">Partially Paid</option>
+          </select>
+          <button
+            onClick={() => {
+              setStatusFilter("all")
+              setPaymentFilter("all")
+              setCurrentPage(1)
+            }}
+            className="btn btn-secondary"
+          >
+            Clear Filters
+          </button>
         </div>
       </div>
 
@@ -96,25 +142,31 @@ export default function Orders() {
         ) : (
           <>
             <div className="overflow-x-auto">
-              <table className="table">
-                <thead>
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
-                    <th>Order</th>
-                    <th>Customer</th>
-                    <th>Date</th>
-                    <th>Channel</th>
-                    <th>Status</th>
-                    <th>Total</th>
-                    <th>Actions</th>
+                    <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">Order Number</th>
+                    <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">Customer</th>
+                    <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">Total</th>
+                    <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">Status</th>
+                    <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">Payment</th>
+                    <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">Shipping</th>
+                    <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">Date</th>
+                    <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {ordersData?.data.map((order) => (
-                    <tr key={order.id}>
-                      <td>
-                        <span className="font-semibold">#{order.number}</span>
+                    <tr key={order.id} className="border-b border-gray-200 hover:bg-gray-50">
+                      <td className="px-6 py-4">
+                        <Link
+                          to={`/dashboard/orders/${order.id}`}
+                          className="font-medium text-gray-900 hover:text-green-600"
+                        >
+                          #{order.number}
+                        </Link>
                       </td>
-                      <td>
+                      <td className="px-6 py-4 text-sm">
                         <div>
                           <p className="font-medium">
                             {order.billing.first_name} {order.billing.last_name}
@@ -122,23 +174,25 @@ export default function Orders() {
                           <p className="text-xs text-gray-500">{order.billing.email}</p>
                         </div>
                       </td>
-                      <td>{new Date(order.date_created).toLocaleDateString()}</td>
-                      <td>
-                        <span className="capitalize text-sm">{getSalesChannel(order)}</span>
-                      </td>
-                      <td>
+                      <td className="px-6 py-4 font-semibold">₦{Number(order.total).toLocaleString()}</td>
+                      <td className="px-6 py-4">
                         <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
                           {order.status}
                         </span>
                       </td>
-                      <td className="font-semibold">${order.total}</td>
-                      <td>
-                        <button
-                          onClick={() => setSelectedOrder(order)}
-                          className="text-primary-600 hover:text-primary-700 text-sm font-medium"
+                      <td className="px-6 py-4 text-sm">
+                        <span className="px-2 py-1 rounded bg-green-100 text-green-700 text-xs font-medium">Paid</span>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600">
+                        {new Date(order.date_created).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4">
+                        <Link
+                          to={`/dashboard/orders/${order.id}`}
+                          className="text-green-600 hover:text-green-700 text-sm font-medium"
                         >
                           View
-                        </button>
+                        </Link>
                       </td>
                     </tr>
                   ))}
@@ -173,135 +227,6 @@ export default function Orders() {
           </>
         )}
       </div>
-
-      {/* Order Detail Modal */}
-      {selectedOrder && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200 flex items-center justify-between sticky top-0 bg-white">
-              <h2 className="text-2xl font-bold">Order #{selectedOrder.number}</h2>
-              <button onClick={() => setSelectedOrder(null)} className="text-gray-500 hover:text-gray-700">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            <div className="p-6 space-y-6">
-              {/* Status Update */}
-              {canEdit && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Update Status</label>
-                  <div className="flex gap-2">
-                    <select
-                      className="input flex-1"
-                      defaultValue={selectedOrder.status}
-                      onChange={(e) =>
-                        updateStatusMutation.mutate({
-                          id: selectedOrder.id,
-                          status: e.target.value as Order["status"],
-                        })
-                      }
-                    >
-                      {statusOptions.map((status) => (
-                        <option key={status} value={status}>
-                          {status}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              )}
-
-              {/* Customer Info */}
-              <div>
-                <h3 className="font-semibold mb-3">Customer Information</h3>
-                <div className="bg-gray-50 p-4 rounded-lg space-y-2">
-                  <p>
-                    <span className="text-gray-600">Name:</span>{" "}
-                    <span className="font-medium">
-                      {selectedOrder.billing.first_name} {selectedOrder.billing.last_name}
-                    </span>
-                  </p>
-                  <p>
-                    <span className="text-gray-600">Email:</span>{" "}
-                    <span className="font-medium">{selectedOrder.billing.email}</span>
-                  </p>
-                  <p>
-                    <span className="text-gray-600">Phone:</span>{" "}
-                    <span className="font-medium">{selectedOrder.billing.phone}</span>
-                  </p>
-                  <p>
-                    <span className="text-gray-600">Address:</span>{" "}
-                    <span className="font-medium">
-                      {selectedOrder.billing.address_1}, {selectedOrder.billing.city}, {selectedOrder.billing.state},{" "}
-                      {selectedOrder.billing.country}
-                    </span>
-                  </p>
-                </div>
-              </div>
-
-              {/* Order Items */}
-              <div>
-                <h3 className="font-semibold mb-3">Order Items</h3>
-                <div className="border border-gray-200 rounded-lg overflow-hidden">
-                  <table className="w-full">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Qty</th>
-                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Price</th>
-                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Total</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {selectedOrder.line_items.map((item) => (
-                        <tr key={item.id}>
-                          <td className="px-4 py-3">{item.name}</td>
-                          <td className="px-4 py-3">{item.quantity}</td>
-                          <td className="px-4 py-3 text-right">${item.price}</td>
-                          <td className="px-4 py-3 text-right font-semibold">${item.total}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                    <tfoot className="bg-gray-50">
-                      <tr>
-                        <td colSpan={3} className="px-4 py-3 text-right font-semibold">
-                          Total:
-                        </td>
-                        <td className="px-4 py-3 text-right font-bold text-lg">${selectedOrder.total}</td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
-              </div>
-
-              {/* Order Meta */}
-              <div>
-                <h3 className="font-semibold mb-3">Order Details</h3>
-                <div className="bg-gray-50 p-4 rounded-lg space-y-2">
-                  <p>
-                    <span className="text-gray-600">Date:</span>{" "}
-                    <span className="font-medium">{new Date(selectedOrder.date_created).toLocaleString()}</span>
-                  </p>
-                  <p>
-                    <span className="text-gray-600">Sales Channel:</span>{" "}
-                    <span className="font-medium capitalize">{getSalesChannel(selectedOrder)}</span>
-                  </p>
-                  <p>
-                    <span className="text-gray-600">Status:</span>{" "}
-                    <span
-                      className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedOrder.status)}`}
-                    >
-                      {selectedOrder.status}
-                    </span>
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

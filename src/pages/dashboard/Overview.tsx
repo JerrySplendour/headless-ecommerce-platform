@@ -1,12 +1,18 @@
+"use client"
+
 import { useQuery } from "@tanstack/react-query"
 import { analyticsAPI } from "../../api/analytics"
+import { dashboardAPI } from "../../api/dashboard"
 import { ordersAPI } from "../../api/orders"
 import { Link } from "react-router-dom"
+import { useState } from "react"
 
 export default function Overview() {
-  const { data: analytics } = useQuery({
-    queryKey: ["analytics-overview"],
-    queryFn: () => analyticsAPI.getOverview({ period: "month" }),
+  const [period, setPeriod] = useState<"week" | "month" | "year">("week")
+
+  const { data: metrics } = useQuery({
+    queryKey: ["dashboard-metrics", period],
+    queryFn: () => dashboardAPI.getMetrics(period),
   })
 
   const { data: recentOrders } = useQuery({
@@ -19,61 +25,122 @@ export default function Overview() {
     queryFn: () => analyticsAPI.getTopProducts(5),
   })
 
-  const stats = [
+  const overviewWidgets = [
     {
-      label: "Total Revenue",
-      value: `$${analytics?.revenue.total.toFixed(2) || "0.00"}`,
-      change: analytics?.revenue.change || 0,
-      icon: "M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
-    },
-    {
-      label: "Total Orders",
-      value: analytics?.orders.total || 0,
-      change: analytics?.orders.change || 0,
+      label: "Recent Orders",
+      value: metrics?.recent_orders || 0,
+      color: "text-green-600",
+      bgColor: "bg-green-100/50",
       icon: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2",
     },
     {
-      label: "Total Customers",
-      value: analytics?.customers.total || 0,
-      change: analytics?.customers.change || 0,
+      label: "Products Sold",
+      value: metrics?.products_sold || 0,
+      color: "text-blue-600",
+      bgColor: "bg-blue-100/50",
+      icon: "M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4",
+    },
+    {
+      label: "New Customers",
+      value: metrics?.new_customers || 0,
+      color: "text-amber-600",
+      bgColor: "bg-amber-100/50",
       icon: "M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z",
     },
     {
-      label: "Products Sold",
-      value: analytics?.products_sold.total || 0,
-      change: analytics?.products_sold.change || 0,
-      icon: "M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4",
+      label: "Website Visits",
+      value: metrics?.website_visits || 0,
+      color: "text-primary-600",
+      bgColor: "bg-primary-100/50",
+      icon: "M13 10V3L4 14h7v7l9-11h-7z",
+    },
+  ]
+
+  const salesWidgets = [
+    {
+      label: "Total Sales",
+      value: `₦${metrics?.total_sales || "0.00"}`,
+      color: "text-blue-600",
+      bgColor: "bg-blue-100",
+      icon: "M13 10V3L4 14h7v7l9-11h-7z",
+    },
+    {
+      label: "Total Settled",
+      value: `₦${metrics?.total_settled || "0.00"}`,
+      color: "text-green-600",
+      bgColor: "bg-green-100",
+      icon: "M13 10V3L4 14h7v7l9-11h-7z",
+    },
+    {
+      label: "Total Owned",
+      value: `₦${metrics?.total_owned || "0.00"}`,
+      color: "text-yellow-600",
+      bgColor: "bg-yellow-100",
+      icon: "M13 10V3L4 14h7v7l9-11h-7z",
+    },
+    {
+      label: "Offline Sales",
+      value: metrics?.offline_sales || 0,
+      color: "text-purple-600",
+      bgColor: "bg-purple-100",
+      icon: "M13 10V3L4 14h7v7l9-11h-7z",
     },
   ]
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Dashboard Overview</h1>
-        <p className="text-gray-600">Monitor your business performance at a glance</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Dashboard Overview</h1>
+          <p className="text-gray-600">Monitor your business performance at a glance</p>
+        </div>
       </div>
 
-      {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat) => (
-          <div key={stat.label} className="card">
+        {overviewWidgets.map((widget) => (
+          <div key={widget.label} className={`card flex rounded-xl border-white/0 shadow-lg ${widget.bgColor}`}>
             <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center">
-                <svg className="w-6 h-6 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={stat.icon} />
+              <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center">
+                <svg className={`w-6 h-6 ${widget.color}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={widget.icon} />
                 </svg>
               </div>
-              {stat.change !== 0 && (
-                <span className={`text-sm font-medium ${stat.change > 0 ? "text-green-600" : "text-red-600"}`}>
-                  {stat.change > 0 ? "+" : ""}
-                  {stat.change}%
-                </span>
-              )}
             </div>
-            <p className="text-gray-600 text-sm mb-1">{stat.label}</p>
-            <p className="text-3xl font-bold text-gray-900">{stat.value}</p>
+            <div className="ml-2">
+              <p className="text-gray-600 text-sm mb-1">{widget.label}</p>
+              <p className="text-3xl font-bold text-gray-900">{widget.value}</p>
+            </div>
           </div>
         ))}
+      </div>
+
+      <div className="grid grid-cols-6 gap-2">
+        <div className="col-span-4 bg-gray-100 p-3 rounded-xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {salesWidgets.map((widget) => (
+            <div key={widget.label}>
+              <div className="flex items-center justify-between mb-0">
+                <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center">
+                  <svg className={`w-6 h-6 `} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={widget.icon} />
+                  </svg>
+                </div>
+              </div>
+              <p className="text-gray-600 text-sm mb-1 mt-1">{widget.label}</p>
+              <p className={`text-2xl font-bold`}>{widget.value}</p>
+            </div>
+          ))}
+        </div>
+        <div className="col-span-2 bg-gray-100 p-3 rounded-xl">
+          <select
+            value={period}
+            onChange={(e) => setPeriod(e.target.value as "week" | "month" | "year")}
+            className="input max-w-xs"
+          >
+            <option value="week">Last 7 Days</option>
+            <option value="month">Last 30 Days</option>
+            <option value="year">Last Year</option>
+          </select>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -97,15 +164,14 @@ export default function Overview() {
                 <div className="text-right">
                   <p className="font-semibold">${order.total}</p>
                   <span
-                    className={`text-xs px-2 py-1 rounded-full ${
-                      order.status === "completed"
-                        ? "bg-green-100 text-green-700"
-                        : order.status === "processing"
-                          ? "bg-blue-100 text-blue-700"
-                          : order.status === "pending"
-                            ? "bg-yellow-100 text-yellow-700"
-                            : "bg-gray-100 text-gray-700"
-                    }`}
+                    className={`text-xs px-2 py-1 rounded-full ${order.status === "completed"
+                      ? "bg-green-100 text-green-700"
+                      : order.status === "processing"
+                        ? "bg-blue-100 text-blue-700"
+                        : order.status === "pending"
+                          ? "bg-yellow-100 text-yellow-700"
+                          : "bg-gray-100 text-gray-700"
+                      }`}
                   >
                     {order.status}
                   </span>

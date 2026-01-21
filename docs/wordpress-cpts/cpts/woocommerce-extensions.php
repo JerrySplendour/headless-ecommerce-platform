@@ -4,6 +4,10 @@
  * Add custom fields and functionality to WooCommerce orders and products
  */
 
+if (!class_exists('WooCommerce')) {
+    return;
+}
+
 // ===============================
 // 1. Add Sales Channel to Orders
 // ===============================
@@ -164,4 +168,152 @@ add_action('rest_api_init', function () {
         },
     ]);
 });
+
+///============================================
+// 6. Additional REST Endpoint for Product Categories
+// ============================================
+add_action('rest_api_init', function () {
+    register_rest_route('toyfront/v1', '/products', [
+        'methods'  => 'GET',
+        'callback' => function (WP_REST_Request $request) {
+
+            if (!class_exists('WooCommerce')) {
+                return new WP_Error('wc_missing', 'WooCommerce not active', ['status' => 500]);
+            }
+
+            $slug     = $request->get_param('slug');
+            $id       = $request->get_param('id');
+            $search   = $request->get_param('search');
+            $category = $request->get_param('category');
+            $page     = max(1, (int) $request->get_param('page') ?: 1);
+            $per_page = max(1, min(100, (int) $request->get_param('per_page') ?: 12));
+
+            // If slug or ID, fetch single product(s)
+            if ($slug) {
+                $post = get_page_by_path(sanitize_title($slug), OBJECT, 'product');
+                if (!$post) {
+                    return new WP_Error('not_found', 'Product not found', ['status' => 404]);
+                }
+                $products = [wc_get_product($post->ID)];
+            } elseif ($id) {
+                $products = [wc_get_product((int)$id)];
+            } else {
+                // List products with filters
+                $args = [
+                    'status' => 'publish',
+                    'limit'  => $per_page,
+                    'offset' => ($page - 1) * $per_page,
+                ];
+
+                if ($search) {
+                    $args['s'] = sanitize_text_field($search);
+                }
+
+                if ($category) {
+                    $term = get_term($category, 'product_cat');
+                    if ($term && !is_wp_error($term)) {
+                        $args['category'] = [$term->slug];
+                    }
+                }
+
+                $products = wc_get_products($args);
+            }
+
+            $data = [];
+            foreach ($products as $product) {
+                if (!$product) continue;
+
+                $images = [];
+                if ($product->get_image_id()) {
+                    $images[] = [
+                        'id'  => $product->get_image_id(),
+                        'src' => wp_get_attachment_url($product->get_image_id()),
+                    ];
+                }
+
+                foreach ($product->get_gallery_image_ids() as $image_id) {
+                    $images[] = [
+                        'id'  => $image_id,
+                        'src' => wp_get_attachment_url($image_id),
+                    ];
+                }
+
+                $data[] = [
+                    'id'            => $product->get_id(),
+                    'name'          => $product->get_name(),
+                    'slug'          => $product->get_slug(),
+                    'price'         => $product->get_price(),
+                    'regular_price' => $product->get_regular_price(),
+                    'sale_price'    => $product->get_sale_price(),
+                    'stock_status'  => $product->get_stock_status(),
+                    'description'   => $product->get_description(),
+                    'images'        => $images,
+                    'categories'    => array_map(fn($c) => [
+                        'id'   => $c->term_id,
+                        'name' => $c->name,
+                        'slug' => $c->slug,
+                    ], wp_get_post_terms($product->get_id(), 'product_cat')),
+                ];
+            }
+
+            // Set total & totalPages headers for frontend
+            $total = wc_get_products([
+                'status'   => 'publish',
+                'limit'    => -1,
+                's'        => $search ?: '',
+                'category' => isset($term) ? [$term->slug] : null,
+            ]);
+
+            $total_count = count($total);
+            $total_pages = ceil($total_count / $per_page);
+
+            header("X-WP-Total: {$total_count}");
+            header("X-WP-TotalPages: {$total_pages}");
+
+            return rest_ensure_response($slug || $id ? $data[0] : $data);
+        },
+        'permission_callback' => '__return_true',
+    ]);
+});
+
+///============================================
+// 6. Additional REST Endpoint for Product Categories
+// ============================================
+add_action('rest_api_init', function () {
+  register_rest_route('toyfront/v1', '/categories', [
+    'methods' => 'GET',
+    'callback' => function () {
+
+      if (!class_exists('WooCommerce')) {
+        return new WP_Error('wc_missing', 'WooCommerce not active', ['status' => 500]);
+      }
+
+      $terms = get_terms([
+        'taxonomy'   => 'product_cat',
+        'hide_empty' => true,
+      ]);
+
+      if (is_wp_error($terms)) {
+        return $terms;
+      }
+
+      $data = array_map(function ($term) {
+        $thumbnail_id = get_term_meta($term->term_id, 'thumbnail_id', true);
+
+        return [
+          'id'    => $term->term_id,
+          'name'  => $term->name,
+          'slug'  => $term->slug,
+          'count' => $term->count,
+          'image' => $thumbnail_id ? wp_get_attachment_url($thumbnail_id) : null,
+        ];
+      }, $terms);
+
+      return rest_ensure_response($data);
+    },
+    'permission_callback' => '__return_true',
+  ]);
+});
+
+
 ?>
