@@ -6,16 +6,19 @@ import { productsAPI } from "../../api/products"
 import { hasPermission } from "../../utils/permissions"
 import { useAuthStore } from "../../store/authStore"
 
+  type StockFilter = "instock" | "outofstock" | "onbackorder" | "all"
+
 export default function Products() {
   const navigate = useNavigate()
   const [currentTab, setCurrentTab] = useState<"products" | "collections">("products")
   const [currentPage, setCurrentPage] = useState(1)
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState<number | undefined>()
-  const [stockFilter, setStockFilter] = useState<string>("all")
+  const [stockFilter, setStockFilter] = useState<StockFilter>("all")
   const queryClient = useQueryClient()
   const user = useAuthStore((state) => state.user)
 
+  
   const { data: productsData, isLoading } = useQuery({
     queryKey: ["dashboard-products", currentPage, searchTerm, selectedCategory, stockFilter],
     queryFn: () =>
@@ -144,7 +147,7 @@ export default function Products() {
                   </option>
                 ))}
               </select>
-              <select className="input max-w-xs" value={stockFilter} onChange={(e) => setStockFilter(e.target.value)}>
+              <select className="input max-w-xs" value={stockFilter} onChange={(e) => setStockFilter(e.target.value as StockFilter)}>
                 <option value="all">All Stock Status</option>
                 <option value="instock">In Stock</option>
                 <option value="outofstock">Out of Stock</option>

@@ -8,7 +8,8 @@ interface PaymentGatewayProps {
   orderId: number
   amount: number
   email: string
-  customerName: string
+  paymentMethod?: string 
+  customerName?: string
   onSuccess: () => void
   onError: (error: string) => void
 }
@@ -23,7 +24,6 @@ export default function PaymentGateway({
   orderId,
   amount,
   email,
-  customerName,
   onSuccess,
   onError,
 }: PaymentGatewayProps) {
@@ -31,12 +31,12 @@ export default function PaymentGateway({
 
   const initPaymentMutation = useMutation({
     mutationFn: () => paymentsAPI.initializePayment(orderId, selectedMethod, amount),
-    onSuccess: async (data) => {
+    onSuccess: async () => {
       if (selectedMethod === "paystack") {
-        await handlePaystackPayment(data)
+        await handlePaystackPayment()
       } else if (selectedMethod === "stripe") {
         // Redirect to Stripe hosted checkout or integration
-        handleStripePayment(data)
+        handleStripePayment()
       } else if (selectedMethod === "offline") {
         onSuccess()
       }
@@ -46,7 +46,7 @@ export default function PaymentGateway({
     },
   })
 
-  const handlePaystackPayment = async (data: any) => {
+  const handlePaystackPayment = async () => {
     // Load Paystack script
     const script = document.createElement("script")
     script.src = "https://js.paystack.co/v1/inline.js"
@@ -85,7 +85,7 @@ export default function PaymentGateway({
     }
   }
 
-  const handleStripePayment = (data: any) => {
+  const handleStripePayment = () => {
     // Redirect to Stripe checkout or use Stripe Elements
     // This is a simplified example - implement full Stripe integration
     const stripeCheckoutUrl = `https://checkout.stripe.com?order_id=${orderId}&amount=${amount}`

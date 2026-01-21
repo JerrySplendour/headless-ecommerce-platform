@@ -1,5 +1,5 @@
 import axios, { AxiosError } from "axios"
-import { API_BASE_URL, API_ENDPOINTS } from "../config/api"
+import { API_BASE_URL } from "../config/api"
 import type { User } from "../types"
 
 
@@ -80,6 +80,7 @@ export const authAPI = {
       email: data.email,
       displayName: data.name,
       roles: data.roles || ["customer"],
+      role: data.roles?.[0] as "admin" | "cashier" | "inventory_manager" | "marketer", // pick the first role
       isVerified: data.is_verified,
     }
   },

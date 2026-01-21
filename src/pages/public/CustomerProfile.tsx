@@ -46,7 +46,7 @@ export default function CustomerProfile() {
     phone: "",
   })
 
-  const { data: customer, isLoading: customerLoading } = useQuery({
+  const { data: customer } = useQuery({
     queryKey: ["customer", user?.id],
     queryFn: () => customersAPI.getById(user?.id || 0),
     enabled: !!user?.id,

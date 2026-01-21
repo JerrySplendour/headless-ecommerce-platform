@@ -67,7 +67,7 @@ export default function ProductEdit() {
 
   const [images, setImages] = useState<ProductImage[]>([])
   const [categories, setCategories] = useState<number[]>([])
-  const [tags, setTags] = useState<string[]>([])
+  const [tags, _setTags] = useState<string[]>([])
   const [attributes, setAttributes] = useState<ProductAttribute[]>([])
   const [showMediaLibrary, setShowMediaLibrary] = useState(false)
   const [mediaSelectMode, setMediaSelectMode] = useState<"featured" | "gallery">("featured")

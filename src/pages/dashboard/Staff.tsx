@@ -5,13 +5,13 @@ import type React from "react"
 import { useState } from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { staffAPI } from "../../api/staff"
-import type { StaffMember } from "../../types"
+// import type { StaffMember } from "../../types"
 import { hasPermission } from "../../utils/permissions"
 import { useAuthStore } from "../../store/authStore"
 
 export default function Staff() {
   const [showAddModal, setShowAddModal] = useState(false)
-  const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null)
+  // const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null)
   const queryClient = useQueryClient()
   const user = useAuthStore((state) => state.user)
 
@@ -35,7 +35,7 @@ export default function Staff() {
   })
 
   const canCreate = hasPermission(user, "create_staff")
-  const canView = hasPermission(user, "view_staff")
+  // const canView = hasPermission(user, "view_staff")
 
   const handleDelete = (id: number) => {
     if (confirm("Are you sure you want to delete this staff member?")) {

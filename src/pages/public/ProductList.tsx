@@ -1,19 +1,19 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Link, useSearchParams } from "react-router-dom"
+import { Link } from "react-router-dom"
 import { useQuery } from "@tanstack/react-query"
 import { productsAPI } from "../../api/products"
 import { useCartStore } from "../../store/cartStore"
 
 export default function ProductList() {
-  const [searchParams, setSearchParams] = useSearchParams();
+  // const [searchParams, setSearchParams] = useSearchParams();
   const [currentPage, setCurrentPage] = useState(1)
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState<number | undefined>()
 
   // const addItem = useCartStore((state) => state.addItem)
-  const { items: cartItems, addItem, updateQuantity, removeItem } = useCartStore()
+  const { items: cartItems, addItem, updateQuantity } = useCartStore()
 
   const { data: productsData, isLoading } = useQuery({
     queryKey: ["products", currentPage, searchTerm, selectedCategory],
@@ -35,15 +35,15 @@ export default function ProductList() {
     queryFn: () => productsAPI.getCategories(),
   })
 
-  const handleAddToCart = (product: any) => {
-    addItem({
-      product_id: product.id,
-      name: product.name,
-      price: product.price,
-      quantity: 1,
-      image: product.images[0]?.src || "",
-    })
-  }
+  // const handleAddToCart = (product: any) => {
+  //   addItem({
+  //     product_id: product.id,
+  //     name: product.name,
+  //     price: product.price,
+  //     quantity: 1,
+  //     image: product.images[0]?.src || "",
+  //   })
+  // }
 
   return (
     <div className="container mx-auto px-4 py-8 pt-[100px]">

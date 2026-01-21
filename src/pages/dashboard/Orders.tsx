@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { useQuery, useQueryClient } from "@tanstack/react-query"
+import { useQuery } from "@tanstack/react-query"
 import { useNavigate, Link } from "react-router-dom"
 import { ordersAPI } from "../../api/orders"
 import type { Order } from "../../types"
@@ -13,7 +13,7 @@ export default function Orders() {
   const [currentPage, setCurrentPage] = useState(1)
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [paymentFilter, setPaymentFilter] = useState<string>("all")
-  const queryClient = useQueryClient()
+  // const queryClient = useQueryClient()
   const user = useAuthStore((state) => state.user)
 
   const { data: ordersData, isLoading } = useQuery({

@@ -354,14 +354,14 @@ function CampaignFormModal({ onClose, onSuccess }: { onClose: () => void; onSucc
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              {formData.discount_type === "percentage" ? "Discount Percentage" : "Discount Amount"}
+              {formData.discount_type === "percent" ? "Discount Percentage" : "Discount Amount"}
             </label>
             <input
               type="number"
               step="0.01"
               required
               className="input"
-              placeholder={formData.discount_type === "percentage" ? "e.g., 20" : "e.g., 10.00"}
+              placeholder={formData.discount_type === "percent" ? "e.g., 20" : "e.g., 10.00"}
               value={formData.amount}
               onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
             />

@@ -27,7 +27,7 @@ export const productsAPI_ = {
 
   getById: async (id: number): Promise<Product> => {
     const response = await publicApiClient.get(`${API_ENDPOINTS.PRODUCTS}/?id=${id}`, {
-      
+
     })
     return response.data
   },
@@ -131,13 +131,14 @@ export const productsAPI = {
     per_page?: number
     search?: string
     category?: number
+    stock_status?: "instock" | "outofstock" | "onbackorder"
   }): Promise<{ data: Product[]; total: number; totalPages: number }> => {
     const response = await publicApiClient.get(API_ENDPOINTS.PRODUCTS, {
       params,
     })
 
     console.log("FETCHED URL:", response.config.url)
-console.log("BASE URL:", response.config.baseURL)
+    console.log("BASE URL:", response.config.baseURL)
 
     return {
       data: response.data,

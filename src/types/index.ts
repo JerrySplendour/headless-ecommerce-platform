@@ -2,7 +2,7 @@ export interface User {
   id: number
   username: string
   email: string
-  role?: "admin" | "cashier" | "inventory_manager" | "marketer"
+  role: "admin" | "cashier" | "inventory_manager" | "marketer"
   displayName: string
   token?: string
   roles: string[]

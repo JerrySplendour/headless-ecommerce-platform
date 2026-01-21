@@ -4,11 +4,6 @@ import { useState } from "react"
 import { useMutation } from "@tanstack/react-query"
 import { checkoutAPI } from "../api/checkout"
 
-interface ShippingOption {
-  id: string
-  name: string
-  cost: number
-}
 
 interface ShippingMethodModalProps {
   isOpen: boolean

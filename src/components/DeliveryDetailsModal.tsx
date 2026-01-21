@@ -76,7 +76,6 @@ export default function DeliveryDetailsModal({
   onSuccess,
   initialData,
   isLoggedIn,
-  userId,
 }: DeliveryDetailsModalProps) {
   const [formData, setFormData] = useState<DeliveryDetails>({
     email: initialData?.email || "",

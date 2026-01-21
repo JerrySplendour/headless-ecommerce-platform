@@ -5,7 +5,7 @@ import { useAuthStore } from "../../store/authStore"
 
 export default function Unauthorized() {
   const navigate = useNavigate()
-  const { user, getPrimaryRole } = useAuthStore()
+  const { getPrimaryRole } = useAuthStore()
   const role = getPrimaryRole()
 
   const getRedirectPath = () => {

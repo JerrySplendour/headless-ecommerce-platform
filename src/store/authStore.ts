@@ -79,7 +79,7 @@ export const useAuthStore = create<AuthState>()(
         })
       },
 
-      hasAnyPermission: (permissions: string[]) => {
+      hasAnyPermission: () => {
         const state = get()
         return state.user;
       },

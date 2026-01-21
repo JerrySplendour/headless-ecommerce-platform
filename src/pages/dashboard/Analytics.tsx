@@ -20,7 +20,7 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarEleme
 
 export default function Analytics() {
   const [period, setPeriod] = useState<"today" | "week" | "month" | "year">("month")
-  const [dateRange, setDateRange] = useState({
+  const [dateRange,] = useState({
     start_date: "",
     end_date: "",
   })
