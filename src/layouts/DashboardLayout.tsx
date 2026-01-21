@@ -3,7 +3,7 @@
 import { Link, Outlet, useNavigate, useLocation } from "react-router-dom"
 import { useAuthStore } from "../store/authStore"
 import { authAPI } from "../api/auth"
-import { canAccessRoute } from "../utils/permissions"
+// import { canAccessRoute } from "../utils/permissions"
 
 export default function DashboardLayout() {
   const { user, clearAuth } = useAuthStore()
